@@ -16,6 +16,7 @@ type UwsgiStatsCollector struct {
 	UwsgiWorkerStats []Stat
 	UwsgiAppStats    []Stat
 	UwsgiCoreStats   []Stat
+	UwsgiCacheStats  []Stat
 }
 
 type Stat struct {
@@ -45,6 +46,9 @@ func (u *UwsgiStatsCollector) Describe(ch chan<- *prometheus.Desc) {
 		ch <- stat.Desc
 	}
 	for _, stat := range u.UwsgiCoreStats {
+		ch <- stat.Desc
+	}
+	for _, stat := range u.UwsgiCacheStats {
 		ch <- stat.Desc
 	}
 }
@@ -108,6 +112,18 @@ func NewCoreStatMetric(stat *Stat, value int, core *UwsgiCore, worker *UwsgiWork
 		strconv.Itoa(worker.Id),
 		worker.Status,
 		strconv.Itoa(core.Id),
+	)
+}
+
+func NewCacheStatMetric(stat *Stat, value int, cache *UwsgiCache, results *UwsgiStatsReadResults) prometheus.Metric {
+	return prometheus.MustNewConstMetric(
+		stat.Desc,
+		stat.PrometheusType,
+		float64(value),
+		results.Type,
+		results.Identifier,
+		cache.Name,
+		cache.Hash,
 	)
 }
 
@@ -177,6 +193,15 @@ func (u *UwsgiStatsCollector) Collect(ch chan<- prometheus.Metric) {
 					}
 					ch <- NewCoreStatMetric(&stat, value.(int), &core, &worker, &results)
 				}
+			}
+		}
+		for _, stat := range u.UwsgiCacheStats {
+			for _, uwsgi_cache := range results.UwsgiStats.Caches {
+				value, err := reflections.GetField(uwsgi_cache, stat.Name)
+				if err != nil {
+					panic(err)
+				}
+				ch <- NewCacheStatMetric(&stat, value.(int), &uwsgi_cache, &results)
 			}
 		}
 	}
@@ -280,6 +305,24 @@ func NewUwsgiCoreStats() []Stat {
 	}
 }
 
+func NewUwsgiCacheStats() []Stat {
+	prefix := "uwsgi_stats_cache_"
+	suffix := "_total"
+	label_names := []string{"type", "identifier", "name", "hash"}
+	return []Stat{
+		NewUwsgiGaugeStat("Hashsize", "Size of hash.", prefix, &label_names),
+		NewUwsgiCounterStat("Keysize", "Size of key.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Max_Items", "Max Number of items.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Blocks", "Number of blocks.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Blocksize", "Size of blocks.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Items", "Number of Items.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Hits", "Number of cache hits.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Miss", "Number of cache misses.", prefix, suffix, &label_names),
+		NewUwsgiCounterStat("Full", "Is the cache full?", prefix, &label_names),
+		NewUwsgiGaugeStat("Last_Modified_At", "Last cache modification time.", prefix, &label_names),
+	}
+}
+
 func NewUwsgiStatsCollector(reader *UwsgiStatsReader) *UwsgiStatsCollector {
 
 	return &UwsgiStatsCollector{
@@ -301,5 +344,6 @@ func NewUwsgiStatsCollector(reader *UwsgiStatsReader) *UwsgiStatsCollector {
 		UwsgiWorkerStats: NewUwsgiWorkerStats(),
 		UwsgiAppStats:    NewUwsgiAppStats(),
 		UwsgiCoreStats:   NewUwsgiCoreStats(),
+		UwsgiCacheStats:  NewUwsgiCacheStats(),
 	}
 }

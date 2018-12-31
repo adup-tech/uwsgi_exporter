@@ -29,6 +29,7 @@ type UwsgiStats struct {
 	Cwd                 string
 	Sockets             []UwsgiSocket
 	Workers             []UwsgiWorker
+	Caches              []UwsgiCache
 }
 
 type UwsgiSocket struct {
@@ -82,6 +83,21 @@ type UwsgiCore struct {
 	Read_Errors        int
 	In_Requests        int
 	Vars               []string
+}
+
+type UwsgiCache struct {
+    Hits             int
+	Miss             int
+	Items            int
+	Max_Items        int
+	Full             int
+	Hash             string
+	Hashsize         int
+	Keysize          int
+	Blocks           int
+	Blocksize        int
+	Last_Modified_At int
+    Name             string
 }
 
 type UwsgiUnixGlobAddr string
