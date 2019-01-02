@@ -318,7 +318,7 @@ func NewUwsgiCacheStats() []Stat {
 		NewUwsgiCounterStat("Items", "Number of Items.", prefix, suffix, &label_names),
 		NewUwsgiCounterStat("Hits", "Number of cache hits.", prefix, suffix, &label_names),
 		NewUwsgiCounterStat("Miss", "Number of cache misses.", prefix, suffix, &label_names),
-		NewUwsgiCounterStat("Full", "Is the cache full?", prefix, &label_names),
+		NewUwsgiCounterStat("Full", "Is the cache full?", prefix, suffix, &label_names),
 		NewUwsgiGaugeStat("Last_Modified_At", "Last cache modification time.", prefix, &label_names),
 	}
 }
