@@ -24,3 +24,7 @@ _testmain.go
 *.prof
 uwsgi_exporter
 .hg
+
+
+/.idea
+/src
